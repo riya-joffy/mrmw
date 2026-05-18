@@ -14,6 +14,7 @@ import { auth, db } from '../lib/firebase/config';
 
 const AuthContext = createContext({});
 
+/** @returns {any} */
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
