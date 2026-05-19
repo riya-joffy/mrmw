@@ -28,19 +28,25 @@ export const AuthProvider = ({ children }) => {
         // Fetch user role from Firestore
         const userDocRef = doc(db, 'users', userAuth.uid);
         const userDoc = await getDoc(userDocRef);
+        const isDefaultAdmin = userAuth.email && userAuth.email.toLowerCase() === 'riyajoffy1@gmail.com';
         
         if (userDoc.exists()) {
-          setRole(userDoc.data().role);
+          // If the document exists, but the user is the admin and isn't marked as one yet, update it
+          if (isDefaultAdmin && userDoc.data().role !== 'admin') {
+            await setDoc(userDocRef, { role: 'admin' }, { merge: true });
+            setRole('admin');
+          } else {
+            setRole(userDoc.data().role);
+          }
         } else {
           // If the user document doesn't exist, they are a new user (likely via Google Auth)
-          // Default role is 'user'
           await setDoc(userDocRef, {
             uid: userAuth.uid,
             email: userAuth.email,
-            role: 'user',
+            role: isDefaultAdmin ? 'admin' : 'user',
             createdAt: serverTimestamp()
           });
-          setRole('user');
+          setRole(isDefaultAdmin ? 'admin' : 'user');
         }
         setUser(userAuth);
       } else {
@@ -55,11 +61,12 @@ export const AuthProvider = ({ children }) => {
 
   const signup = async (email, password) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    // Create user document in Firestore with default 'user' role
+    const isDefaultAdmin = email.toLowerCase() === 'riyajoffy1@gmail.com';
+    // Create user document in Firestore
     await setDoc(doc(db, 'users', userCredential.user.uid), {
       uid: userCredential.user.uid,
       email: userCredential.user.email,
-      role: 'user',
+      role: isDefaultAdmin ? 'admin' : 'user',
       createdAt: serverTimestamp()
     });
     return userCredential.user;
