@@ -49,6 +49,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
         <nav style={{ display: 'flex', gap: '1rem' }}>
           <button onClick={() => router.push('/admin')} className="btn btn-secondary">All Reports</button>
+          <button onClick={() => router.push('/admin/analysis')} className="btn btn-secondary">Monthly Analysis</button>
           <button onClick={handleLogout} className="btn btn-danger">Logout</button>
         </nav>
       </header>

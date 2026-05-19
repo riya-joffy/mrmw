@@ -9,6 +9,8 @@ export default function AdminDashboardPage() {
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('newest');
   const router = useRouter();
 
   useEffect(() => {
@@ -36,9 +38,40 @@ export default function AdminDashboardPage() {
   const approvedCount = reports.filter(r => r.status === 'approved').length;
   const rejectedCount = reports.filter(r => r.status === 'rejected').length;
 
-  const filteredReports = filterStatus === 'all' 
+  // 1. Status Filter
+  let processedReports = filterStatus === 'all' 
     ? reports 
     : reports.filter(r => r.status === filterStatus);
+
+  // 2. Search Filter
+  if (searchQuery.trim()) {
+    const q = searchQuery.toLowerCase();
+    processedReports = processedReports.filter(r => 
+      r.title.toLowerCase().includes(q) || 
+      (r.authorEmail && r.authorEmail.toLowerCase().includes(q))
+    );
+  }
+
+  // 3. Sorting
+  processedReports = [...processedReports].sort((a, b) => {
+    if (sortBy === 'newest') {
+      const timeA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+      const timeB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+      return timeB - timeA;
+    }
+    if (sortBy === 'oldest') {
+      const timeA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+      const timeB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+      return timeA - timeB;
+    }
+    if (sortBy === 'title-asc') {
+      return a.title.localeCompare(b.title);
+    }
+    if (sortBy === 'title-desc') {
+      return b.title.localeCompare(a.title);
+    }
+    return 0;
+  });
 
   if (loading) {
     return (
@@ -195,6 +228,85 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
+      {/* Advanced Search & Sorting Panel */}
+      <div className="glass-panel" style={{ 
+        padding: '1.25rem 1.5rem', 
+        display: 'flex', 
+        gap: '1.5rem', 
+        marginBottom: '2rem',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderRadius: '16px'
+      }}>
+        {/* Search Input field */}
+        <div style={{ flex: 1, minWidth: '280px', position: 'relative' }}>
+          <input 
+            type="text" 
+            placeholder="Search by title or author email..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ 
+              paddingLeft: '2.75rem', 
+              borderRadius: '24px', 
+              background: 'rgba(15, 23, 42, 0.4)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              fontSize: '0.9375rem'
+            }}
+          />
+          <span style={{ 
+            position: 'absolute', 
+            left: '1.1rem', 
+            top: '50%', 
+            transform: 'translateY(-50%)', 
+            opacity: 0.5, 
+            fontSize: '1rem',
+            pointerEvents: 'none' 
+          }}>🔍</span>
+          {searchQuery && (
+            <button 
+              onClick={() => setSearchQuery('')}
+              style={{
+                position: 'absolute',
+                right: '1.1rem',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                fontSize: '0.875rem'
+              }}
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
+        {/* Sorting Dropdown Selection */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', fontWeight: '500' }}>Sort By:</span>
+          <select 
+            value={sortBy} 
+            onChange={(e) => setSortBy(e.target.value)}
+            style={{ 
+              width: '180px', 
+              borderRadius: '24px', 
+              background: 'rgba(15, 23, 42, 0.6)', 
+              border: '1px solid rgba(255,255,255,0.08)',
+              padding: '0.5rem 1.25rem 0.5rem 1rem',
+              fontSize: '0.875rem',
+              cursor: 'pointer'
+            }}
+          >
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="title-asc">Title (A-Z)</option>
+            <option value="title-desc">Title (Z-A)</option>
+          </select>
+        </div>
+      </div>
+
       {/* Registry Table Panel */}
       <div className="glass-panel" style={{ overflowX: 'auto', borderRadius: '16px' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -211,7 +323,7 @@ export default function AdminDashboardPage() {
             </tr>
           </thead>
           <tbody>
-            {filteredReports.map(report => {
+            {processedReports.map(report => {
               const initial = report.authorEmail ? report.authorEmail[0].toUpperCase() : '?';
               return (
                 <tr 
@@ -258,11 +370,11 @@ export default function AdminDashboardPage() {
                   
                   {/* Submitted Date */}
                   <td style={{ padding: '1.25rem 1.5rem', color: 'var(--text-secondary)', fontSize: '0.9375rem' }}>
-                    {report.createdAt?.toDate().toLocaleDateString(undefined, {
+                    {report.createdAt?.toDate ? report.createdAt.toDate().toLocaleDateString(undefined, {
                       year: 'numeric',
                       month: 'short',
                       day: 'numeric'
-                    }) || 'Just now'}
+                    }) : 'Just now'}
                   </td>
                   
                   {/* Status Badge */}
@@ -295,13 +407,13 @@ export default function AdminDashboardPage() {
               );
             })}
             
-            {filteredReports.length === 0 && (
+            {processedReports.length === 0 && (
               <tr>
                 <td colSpan={5} style={{ padding: '5rem 2rem', textAlign: 'center' }}>
                   <div style={{ fontSize: '2.5rem', marginBottom: '1rem', opacity: 0.3 }}>📂</div>
                   <h4 style={{ margin: 0, color: 'var(--text-secondary)' }}>No reports found</h4>
                   <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                    There are no submissions in the registry matching the selected filters.
+                    There are no submissions in the registry matching your filters and search query.
                   </p>
                 </td>
               </tr>
