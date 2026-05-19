@@ -51,6 +51,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <button onClick={() => router.push('/admin')} className="btn btn-secondary">All Reports</button>
           <button onClick={() => router.push('/admin/analysis')} className="btn btn-secondary">Monthly Analysis</button>
           <button onClick={() => router.push('/admin/users')} className="btn btn-secondary">Manage Users</button>
+          <button onClick={() => router.push('/settings')} className="btn btn-secondary">Settings</button>
           <button onClick={handleLogout} className="btn btn-danger">Logout</button>
         </nav>
       </header>

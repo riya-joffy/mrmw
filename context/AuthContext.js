@@ -8,7 +8,10 @@ import {
   signOut,
   GoogleAuthProvider,
   signInWithPopup,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
+  updatePassword
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase/config';
@@ -109,8 +112,17 @@ export const AuthProvider = ({ children }) => {
     return sendPasswordResetEmail(auth, email);
   };
 
+  const changeUserPassword = async (currentPassword, newPassword) => {
+    if (!auth.currentUser || !auth.currentUser.email) {
+      throw new Error("No active authenticated session found.");
+    }
+    const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPassword);
+    await reauthenticateWithCredential(auth.currentUser, credential);
+    return updatePassword(auth.currentUser, newPassword);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, role, signup, login, loginWithGoogle, logout, resetPassword, loading }}>
+    <AuthContext.Provider value={{ user, role, signup, login, loginWithGoogle, logout, resetPassword, changeUserPassword, loading }}>
       {!loading ? children : <div className="loading-screen">Loading...</div>}
     </AuthContext.Provider>
   );

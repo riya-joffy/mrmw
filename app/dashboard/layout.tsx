@@ -114,6 +114,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <nav style={{ display: 'flex', gap: '1rem' }}>
           <button onClick={() => router.push('/dashboard')} className="btn btn-secondary">My Reports</button>
           <button onClick={() => router.push('/dashboard/new')} className="btn btn-primary">+ New Report</button>
+          <button onClick={() => router.push('/settings')} className="btn btn-secondary">Settings</button>
           <button onClick={handleLogout} className="btn btn-danger">Logout</button>
         </nav>
       </header>
