@@ -10,7 +10,7 @@ import {
   signInWithPopup,
   sendPasswordResetEmail
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase/config';
 
 const AuthContext = createContext({});
@@ -24,32 +24,30 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (userAuth) => {
-      if (userAuth) {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
         // Fetch user role from Firestore
-        const userDocRef = doc(db, 'users', userAuth.uid);
-        const userDoc = await getDoc(userDocRef);
-        const isDefaultAdmin = userAuth.email && userAuth.email.toLowerCase() === 'riyajoffy1@gmail.com';
+        const docRef = doc(db, 'users', firebaseUser.uid);
+        const docSnap = await getDoc(docRef);
         
-        if (userDoc.exists()) {
-          // If the document exists, but the user is the admin and isn't marked as one yet, update it
-          if (isDefaultAdmin && userDoc.data().role !== 'admin') {
-            await setDoc(userDocRef, { role: 'admin' }, { merge: true });
-            setRole('admin');
-          } else {
-            setRole(userDoc.data().role);
-          }
+        if (docSnap.exists()) {
+          setRole(docSnap.data().role);
+          setUser(firebaseUser);
         } else {
-          // If the user document doesn't exist, they are a new user (likely via Google Auth)
-          await setDoc(userDocRef, {
-            uid: userAuth.uid,
-            email: userAuth.email,
-            role: isDefaultAdmin ? 'admin' : 'user',
+          // If the user matches riyajoffy1@gmail.com, elevate automatically
+          const isDefaultAdmin = firebaseUser.email?.toLowerCase() === 'riyajoffy1@gmail.com';
+          const defaultRole = isDefaultAdmin ? 'admin' : 'user';
+          
+          await setDoc(docRef, {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            role: defaultRole,
             createdAt: serverTimestamp()
           });
-          setRole(isDefaultAdmin ? 'admin' : 'user');
+          
+          setRole(defaultRole);
+          setUser(firebaseUser);
         }
-        setUser(userAuth);
       } else {
         setUser(null);
         setRole(null);
@@ -88,7 +86,17 @@ export const AuthProvider = ({ children }) => {
     await signOut(auth);
   };
 
-  const resetPassword = (email) => {
+  const resetPassword = async (email) => {
+    // 1. Verify if the email exists in our registered Firestore database first
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('email', '==', email.trim().toLowerCase()));
+    const querySnapshot = await getDocs(q);
+    
+    if (querySnapshot.empty) {
+      throw new Error('This email address is not registered in our system.');
+    }
+    
+    // 2. If it exists, proceed to send the Firebase recovery email
     return sendPasswordResetEmail(auth, email);
   };
 
