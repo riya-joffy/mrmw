@@ -72,6 +72,25 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleApproveAccess = async (targetUser: UserRecord) => {
+    const confirmChange = window.confirm(`Are you sure you want to APPROVE access for ${targetUser.email}?`);
+    if (!confirmChange) return;
+
+    setActionLoading(targetUser.uid);
+    try {
+      const docRef = doc(db, 'users', targetUser.uid);
+      await updateDoc(docRef, { role: 'user' });
+      
+      // Update UI state
+      setUsers(prev => prev.map(u => u.uid === targetUser.uid ? { ...u, role: 'user' } : u));
+    } catch (error) {
+      console.error('Error approving user access:', error);
+      alert('Failed to approve user access.');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const handleToggleSuspension = async (targetUser: UserRecord) => {
     // Safety check: Cannot suspend oneself
     if (targetUser.uid === activeAdmin?.uid) {
@@ -121,7 +140,7 @@ export default function AdminUsersPage() {
     <div style={{ animation: 'fadeIn 0.5s ease-out' }}>
       
       {/* Page Title & Stats Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+      <div style={{ display: 'flex', justifycontent: 'space-between', alignItems: 'center', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>User Access Control</h3>
           <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
@@ -242,21 +261,41 @@ export default function AdminUsersPage() {
                   <td style={{ padding: '1.25rem 1.5rem', textAlign: 'right' }}>
                     <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', alignItems: 'center' }}>
                       
-                      {/* Toggle Role Button */}
-                      <button
-                        onClick={() => handleToggleRole(record)}
-                        disabled={isActionDisabled}
-                        className="btn btn-secondary"
-                        style={{ 
-                          padding: '0.4rem 0.85rem', 
-                          fontSize: '0.75rem', 
-                          borderRadius: '8px',
-                          opacity: isActionDisabled ? 0.35 : 1,
-                          cursor: isActionDisabled ? 'not-allowed' : 'pointer'
-                        }}
-                      >
-                        Change Role
-                      </button>
+                      {/* Approve / Toggle Role Button */}
+                      {record.role === 'pending' ? (
+                        <button
+                          onClick={() => handleApproveAccess(record)}
+                          disabled={actionLoading === record.uid}
+                          className="btn"
+                          style={{ 
+                            padding: '0.4rem 0.85rem', 
+                            fontSize: '0.75rem', 
+                            borderRadius: '8px',
+                            background: 'rgba(16,185,129,0.15)',
+                            color: 'var(--success)',
+                            border: '1px solid transparent',
+                            fontWeight: '600',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Approve Access
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleToggleRole(record)}
+                          disabled={isActionDisabled}
+                          className="btn btn-secondary"
+                          style={{ 
+                            padding: '0.4rem 0.85rem', 
+                            fontSize: '0.75rem', 
+                            borderRadius: '8px',
+                            opacity: isActionDisabled ? 0.35 : 1,
+                            cursor: isActionDisabled ? 'not-allowed' : 'pointer'
+                          }}
+                        >
+                          Change Role
+                        </button>
+                      )}
 
                       {/* Toggle Suspension Button */}
                       <button

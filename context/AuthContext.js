@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }) => {
         } else {
           // If the user matches riyajoffy1@gmail.com, elevate automatically
           const isDefaultAdmin = firebaseUser.email?.toLowerCase() === 'riyajoffy1@gmail.com';
-          const defaultRole = isDefaultAdmin ? 'admin' : 'user';
+          const defaultRole = isDefaultAdmin ? 'admin' : 'pending';
           
           await setDoc(docRef, {
             uid: firebaseUser.uid,
@@ -74,7 +74,7 @@ export const AuthProvider = ({ children }) => {
     await setDoc(doc(db, 'users', userCredential.user.uid), {
       uid: userCredential.user.uid,
       email: userCredential.user.email,
-      role: isDefaultAdmin ? 'admin' : 'user',
+      role: isDefaultAdmin ? 'admin' : 'pending',
       createdAt: serverTimestamp()
     });
     return userCredential.user;

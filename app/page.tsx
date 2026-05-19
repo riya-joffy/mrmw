@@ -19,7 +19,7 @@ export default function LandingPage() {
   if (user) {
     if (role === 'admin') {
       router.push('/admin');
-    } else if (role === 'user') {
+    } else if (role === 'user' || role === 'pending') {
       router.push('/dashboard');
     }
   }
