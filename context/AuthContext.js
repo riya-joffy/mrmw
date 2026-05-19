@@ -7,7 +7,8 @@ import {
   signInWithEmailAndPassword, 
   signOut,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithPopup,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase/config';
@@ -87,8 +88,12 @@ export const AuthProvider = ({ children }) => {
     await signOut(auth);
   };
 
+  const resetPassword = (email) => {
+    return sendPasswordResetEmail(auth, email);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, role, signup, login, loginWithGoogle, logout, loading }}>
+    <AuthContext.Provider value={{ user, role, signup, login, loginWithGoogle, logout, resetPassword, loading }}>
       {!loading ? children : <div className="loading-screen">Loading...</div>}
     </AuthContext.Provider>
   );
