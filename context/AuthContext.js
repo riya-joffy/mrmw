@@ -31,7 +31,16 @@ export const AuthProvider = ({ children }) => {
         const docSnap = await getDoc(docRef);
         
         if (docSnap.exists()) {
-          setRole(docSnap.data().role);
+          const userData = docSnap.data();
+          if (userData.isSuspended) {
+            await signOut(auth);
+            setUser(null);
+            setRole(null);
+            alert("Your account has been suspended by an administrator. Access is blocked.");
+            setLoading(false);
+            return;
+          }
+          setRole(userData.role);
           setUser(firebaseUser);
         } else {
           // If the user matches riyajoffy1@gmail.com, elevate automatically
